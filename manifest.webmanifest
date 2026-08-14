@@ -1,11 +1,11 @@
 {
   "name": "PillPal AI",
-  "short_name": "PillPal",
+  "short_name": "PillPal AI",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "description": "Multilingual medication reminder prototype with voice reminders.",
+  "background_color": "#f4f7fb",
+  "theme_color": "#1769aa",
   "icons": [
     {
       "src": "icon.svg",
