@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PillPal AI">
+<link rel="apple-touch-icon" href="icon.svg">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PillPal AI — Smart Medication Companion</title>
+<style>
+:root{--blue:#2563eb;--blue2:#eff6ff;--green:#16a34a;--red:#dc2626;--ink:#172033;--muted:#64748b;--card:#fff;--bg:#f6f8fc;--border:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select{font:inherit}.app{max-width:1180px;margin:auto;padding:18px}
+header{background:linear-gradient(135deg,#1d4ed8,#60a5fa);color:white;border-radius:24px;padding:28px;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:0 12px 30px #1d4ed822}
+.brand{display:flex;gap:14px;align-items:center}.logo{width:58px;height:58px;border-radius:18px;background:white;color:var(--blue);display:grid;place-items:center;font-size:30px}
+h1,h2,h3,p{margin-top:0}.tag{opacity:.9}.date{background:#ffffff22;padding:10px 14px;border-radius:14px}
+nav{display:flex;gap:8px;margin:18px 0;overflow:auto}nav button{border:0;background:white;padding:12px 18px;border-radius:12px;cursor:pointer;color:var(--muted);font-weight:700}nav button.active{background:#dbeafe;color:#1d4ed8}
+.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.two{grid-template-columns:1.25fr .75fr}.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 5px 18px #17203308}
+.stat{font-size:30px;font-weight:800}.muted{color:var(--muted)}.pill{display:flex;justify-content:space-between;align-items:center;padding:15px;background:#f8fafc;border:1px solid var(--border);border-radius:14px;margin:10px 0}
+.status{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}.taken{background:#dcfce7;color:#166534}.pending{background:#fef3c7;color:#92400e}.missed{background:#fee2e2;color:#991b1b}
+.primary,.secondary,.danger{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer}.primary{background:var(--blue);color:white}.secondary{background:#e0e7ff;color:#3730a3}.danger{background:#fee2e2;color:#991b1b}
+.scan{border:2px dashed #93c5fd;background:#eff6ff;text-align:center;padding:30px;border-radius:18px}.scan input{display:none}.scan label{display:inline-block}.preview{max-width:240px;max-height:180px;border-radius:14px;margin:15px auto;display:none}
+form{display:grid;gap:12px}input,select{width:100%;border:1px solid var(--border);border-radius:11px;padding:14px;background:white;font-size:16px}
+#language{width:auto;min-width:120px;border:0;padding:10px 12px;font-weight:700}
+button{min-height:44px}
+.toast{position:fixed;right:20px;bottom:20px;background:#111827;color:white;padding:14px 18px;border-radius:12px;display:none;z-index:10}
+.progress{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:#2563eb;width:0}
+footer{text-align:center;color:var(--muted);padding:30px 0 10px;font-size:13px}
+@media(max-width:800px){.grid,.two{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}}
+</style>
+
+<style>
+html,body{width:100%;min-height:100%;margin:0;padding:0}
+body{overflow-x:hidden;-webkit-text-size-adjust:100%;touch-action:manipulation}
+button,input,select{font:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+@media (max-width:700px){
+  body{font-size:17px}
+  .container,.app,.main,.content{width:100%!important;max-width:none!important}
+  nav{position:sticky;bottom:0;z-index:50;display:grid!important;grid-template-columns:repeat(5,1fr);gap:4px;padding:6px!important;background:#fff;border-top:1px solid #ddd}
+  nav button{min-height:54px!important;padding:6px 2px!important;font-size:12px!important;border-radius:10px!important}
+  .card{padding:18px!important;margin-bottom:14px!important}
+  h1{font-size:27px!important}
+  h2{font-size:22px!important}
+  input,select{font-size:17px!important;min-height:48px;box-sizing:border-box}
+  .primary,.secondary,.danger{min-height:50px!important;font-size:17px!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo">💊</div><div><h1 id="brandTitle">PillPal AI</h1><div class="tag" id="brandTag">Your Smart Medication Companion</div></div></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <select id="language" onchange="setLanguage(this.value)" aria-label="Language">
+    <option value="en">English</option>
+    <option value="hi">हिन्दी</option>
+    <option value="bn">বাংলা</option>
+    <option value="ta">தமிழ்</option>
+    <option value="te">తెలుగు</option>
+    <option value="mr">मराठी</option>
+    <option value="gu">ગુજરાતી</option>
+    <option value="kn">ಕನ್ನಡ</option>
+    <option value="ml">മലയാളം</option>
+    <option value="pa">ਪੰਜਾਬੀ</option>
+    <option value="ur">اردو</option>
+</select>
+  <div class="date" id="today"></div>
+</div>
+</header>
+
+<nav>
+<button class="active" data-view="home">🏠 Home</button>
+<button data-view="scan">📸 Scan</button>
+<button data-view="reminders">🔔 Reminders</button>
+<button data-view="meds">💊 Medicines</button>
+<button data-view="care">👁 Family</button>
+</nav>
+
+<section id="home" class="view active">
+  <div class="grid">
+    <div class="card"><div class="muted" id="todayDosesLabel">Today's doses</div><div class="stat" id="doseCount">0/0</div><div class="progress"><i id="progress"></i></div></div>
+    <div class="card"><div class="muted" id="nextReminderLabel">Next reminder</div><div class="stat" id="nextDose">—</div><div class="muted" id="nextName">No upcoming dose</div></div>
+    <div class="card"><div class="muted" id="adherenceLabel">Adherence</div><div class="stat" id="adherence">0%</div><div class="muted" id="adherenceSub">Based on this week's demo log</div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2 id="todayMedsTitle">Today's medicines</h2><div id="todayList"></div></div>
+</section>
+
+<section id="scan" class="view">
+  <div class="card">
+    <h2 id="scanTitle">📸 Scan a medicine strip</h2>
+    <p class="muted" id="scanDescription">Upload a photo for the competition demo. In this prototype, recognition is simulated; a real deployment would connect a validated medicine-recognition model and trusted medicine database.</p>
+    <div class="scan">
+      <input id="photo" type="file" accept="image/*" capture="environment">
+      <label for="photo" class="primary" id="choosePhoto">Choose / Take Photo</label>
+      <img id="preview" class="preview">
+      <div id="scanResult" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="reminders" class="view">
+  <div class="grid two">
+    <div class="card">
+      <h2 id="reminderTitle">🔔 Medication Reminders</h2>
+      <p class="muted" id="reminderSubtitle">Your schedule for today</p>
+      <div id="reminderList"></div>
+    </div>
+    <div class="card">
+      <h2 id="nextTitle">⏰ Next Reminder</h2>
+      <div class="stat" id="reminderCountdown">—</div>
+      <p id="reminderNextName" class="muted">No upcoming reminder</p>
+      <button class="primary" onclick="enableVoice()" id="enableVoiceBtn">🔊 Enable Voice Reminders</button>
+      <button class="secondary" style="margin-top:8px" onclick="testVoice()" id="testVoiceBtn">▶ Test Voice Reminder</button>
+      <button class="secondary" style="margin-top:8px" onclick="requestNotifications()" id="notifyBtn">📳 Enable phone notifications</button>
+      <p class="muted" id="voiceStatus" style="margin-top:10px;font-weight:700"></p>
+        <button class="primary" id="mobileVoiceTip" onclick="activateMobileVoice()">📱 Enable voice on this phone</button>
+        <p class="muted" style="font-size:13px" id="mobileVoiceHelp">On phones, tap this button once after opening the app so the browser allows speech.</p>
+      <p class="muted" style="margin-top:12px;font-size:13px" id="voiceDescription">Voice reminders use your phone's built-in speech feature. Keep the app open for the demo and allow audio/notification permissions if prompted.</p>
+    </div>
+  </div>
+</section>
+<section id="meds" class="view">
+  <div class="grid two">
+    <div class="card"><h2 id="myMedsTitle">My Medicines</h2><div id="medicineList"></div></div>
+    <div class="card"><h2 id="addMedTitle">Add a medicine</h2>
+      <form id="medForm">
+        <input id="medName" placeholder="Medicine name" id="medName" required>
+        <input id="medDose" placeholder="Dose, e.g. 1 tablet" id="medDose" required>
+        <input id="medTime" type="time" required>
+        <button class="primary" id="addMedBtn">Add medicine</button>
+      </form>
+      <p class="muted" style="margin-top:12px" id="safetyNote">Always confirm medicine names, doses and schedules with a parent, caregiver, doctor or pharmacist.</p>
+    </div>
+  </div>
+</section>
+
+<section id="care" class="view">
+  <div class="grid two">
+    <div class="card"><h2 id="careTitle">👁 Caregiver Dashboard</h2><p class="muted" id="careDescription">A simple daily view for family members.</p><div id="careList"></div></div>
+    <div class="card"><h2 id="reportTitle">Daily report</h2><div class="stat" id="reportPercent">0%</div><p class="muted" id="reportSub">Doses marked taken today</p><button class="primary" onclick="shareReport()" id="shareReportBtn">Share demo report</button></div>
+  </div>
+</section>
+
+<footer id="footer">PillPal AI • Healthcare & Well-being • Competition prototype</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const key='pillpal_demo_v1';
+let state=JSON.parse(localStorage.getItem(key)||'null')||{
+ meds:[
+  {id:1,name:'Morning Medicine',dose:'1 tablet',time:'08:00',taken:false},
+  {id:2,name:'After-Lunch Medicine',dose:'1 tablet',time:'14:00',taken:false},
+  {id:3,name:'Evening Medicine',dose:'1 tablet',time:'20:00',taken:false}
+ ]};
+function save(){localStorage.setItem(key,JSON.stringify(state));render()}
+function fmt(t){let [h,m]=t.split(':');h=+h;let ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${m} ${ap}`}
+
+
+const i18n={
+en:{
+brandTag:"Your Smart Medication Companion",todayDoses:"Today's doses",nextReminder:"Next reminder",adherence:"Adherence",adherenceSub:"Based on this week's demo log",todayMeds:"Today's medicines",
+scanTitle:"📸 Scan a medicine strip",scanDescription:"Take or upload a photo of a medicine strip for the demo.",choosePhoto:"Choose / Take Photo",
+myMeds:"My Medicines",addMed:"Add a medicine",medicineName:"Medicine name",dose:"Dose, e.g. 1 tablet",addMedicine:"Add medicine",
+caregiver:"👁 Caregiver Dashboard",careDescription:"A simple daily view for family members.",dailyReport:"Daily report",reportSub:"Doses marked taken today",shareReport:"Share demo report",
+reminder:"🔔 Medication Reminders",todaySchedule:"Your schedule for today",next:"⏰ Next Reminder",enableVoice:"🔊 Enable Voice Reminders",testVoice:"▶ Test Voice Reminder",notify:"📳 Enable phone notifications",
+voiceDescription:"Voice reminders use your phone's built-in speech feature. Keep the app open for the demo and allow permissions if prompted.",mobileVoiceHelp:"Tap this button once after opening the app so the browser allows speech.",voiceEnabled:"Voice enabled",safety:"Always confirm medicine names, doses and schedules with a parent, caregiver, doctor or pharmacist.",
+take:"TAKE",taken:"TAKEN",missed:"MISSED",upcoming:"UPCOMING",done:"Done!",nextNone:"All demo reminders completed",noMeds:"No medicines added.",
+analyzing:"🔎 Analyzing image…",demoResult:"Demo result: Medicine detected",verify:"Name and dosage should be verified before use.",addToMeds:"Add to My Medicines",
+voiceOn:"Hello. PillPal AI voice reminders are now enabled.",noUpcoming:"You have completed all your medication reminders for today.",
+reminderVoice:"Medication reminder. It is time to take your {name}. Your scheduled dose is {dose}.",
+missedMsg:"Missed dose detected. Family or caregiver has been notified.",notificationDenied:"Notifications not enabled.",notificationOn:"Notifications enabled!",
+doseTaken:"Dose marked as taken",dosePending:"Dose marked as pending",medicineAdded:"Medicine added",voiceUnsupported:"Voice is not supported on this browser.",voiceUnavailable:"A voice for this language is not installed on this device. Please add the language voice in your phone's text-to-speech settings, then try again.",notificationUnsupported:"This browser does not support notifications.",reportCopied:"Report copied for demo sharing"
+},
+hi:{
+brandTag:"आपका स्मार्ट दवा साथी",todayDoses:"आज की खुराक",nextReminder:"अगला रिमाइंडर",adherence:"दवा पालन",adherenceSub:"इस सप्ताह के डेमो रिकॉर्ड के आधार पर",todayMeds:"आज की दवाएँ",
+scanTitle:"📸 दवा की पट्टी स्कैन करें",scanDescription:"डेमो के लिए दवा की पट्टी की फोटो लें या अपलोड करें।",choosePhoto:"फोटो लें / चुनें",
+myMeds:"मेरी दवाएँ",addMed:"दवा जोड़ें",medicineName:"दवा का नाम",dose:"खुराक, जैसे 1 गोली",addMedicine:"दवा जोड़ें",
+caregiver:"👁 देखभालकर्ता डैशबोर्ड",careDescription:"परिवार के लिए आज की आसान जानकारी।",dailyReport:"दैनिक रिपोर्ट",reportSub:"आज ली गई खुराक",shareReport:"डेमो रिपोर्ट साझा करें",
+reminder:"🔔 दवा रिमाइंडर",todaySchedule:"आज की दवा का समय",next:"⏰ अगला रिमाइंडर",enableVoice:"🔊 वॉइस रिमाइंडर चालू करें",testVoice:"▶ वॉइस रिमाइंडर टेस्ट करें",notify:"📳 फोन नोटिफिकेशन चालू करें",
+voiceDescription:"वॉइस रिमाइंडर आपके फोन की आवाज़ का उपयोग करता है। डेमो के दौरान ऐप खुला रखें और अनुमति दें।",mobileVoiceHelp:"ऐप खोलने के बाद फोन पर वॉइस की अनुमति देने के लिए इस बटन को एक बार दबाएँ।",voiceEnabled:"वॉइस चालू",safety:"दवा का नाम, खुराक और समय हमेशा माता-पिता, देखभालकर्ता, डॉक्टर या फार्मासिस्ट से पुष्टि करें।",
+take:"लेें",taken:"ली गई",missed:"छूट गई",upcoming:"आने वाली",done:"पूरा!",nextNone:"आज के सभी रिमाइंडर पूरे हो गए",noMeds:"कोई दवा नहीं जोड़ी गई।",
+analyzing:"🔎 फोटो की जाँच हो रही है…",demoResult:"डेमो परिणाम: दवा पहचानी गई",verify:"नाम और खुराक लेने से पहले सत्यापित करें।",addToMeds:"मेरी दवाओं में जोड़ें",
+voiceOn:"नमस्ते। PillPal AI वॉइस रिमाइंडर चालू हो गए हैं।",noUpcoming:"आज की सभी दवा रिमाइंडर पूरी हो गई हैं।",
+reminderVoice:"दवा रिमाइंडर। अब आपकी {name} लेने का समय है। आपकी निर्धारित खुराक {dose} है।",
+missedMsg:"दवा की खुराक छूट गई है। परिवार या देखभालकर्ता को सूचना दी गई है।",notificationDenied:"नोटिफिकेशन चालू नहीं हुए।",notificationOn:"नोटिफिकेशन चालू हो गए!",
+doseTaken:"खुराक ली गई",dosePending:"खुराक लंबित",medicineAdded:"दवा जोड़ दी गई",voiceUnsupported:"इस ब्राउज़र में वॉइस सुविधा उपलब्ध नहीं है।",voiceUnavailable:"इस भाषा की वॉइस आपके फोन में उपलब्ध नहीं है। फोन की Text-to-Speech सेटिंग में यह भाषा जोड़ें और फिर कोशिश करें।",notificationUnsupported:"इस ब्राउज़र में नोटिफिकेशन उपलब्ध नहीं हैं।",reportCopied:"डेमो रिपोर्ट कॉपी हो गई"
+},
+bn:{
+brandTag:"আপনার স্মার্ট ওষুধ সঙ্গী",todayDoses:"আজকের ডোজ",nextReminder:"পরবর্তী রিমাইন্ডার",adherence:"ওষুধ গ্রহণ",adherenceSub:"এই সপ্তাহের ডেমো রেকর্ড অনুযায়ী",todayMeds:"আজকের ওষুধ",
+scanTitle:"📸 ওষুধের স্ট্রিপ স্ক্যান করুন",scanDescription:"ডেমোর জন্য ওষুধের স্ট্রিপের ছবি তুলুন বা আপলোড করুন।",choosePhoto:"ছবি তুলুন / বেছে নিন",
+myMeds:"আমার ওষুধ",addMed:"ওষুধ যোগ করুন",medicineName:"ওষুধের নাম",dose:"ডোজ, যেমন ১টি ট্যাবলেট",addMedicine:"ওষুধ যোগ করুন",
+caregiver:"👁 কেয়ারগিভার ড্যাশবোর্ড",careDescription:"পরিবারের জন্য সহজ দৈনিক তথ্য।",dailyReport:"দৈনিক রিপোর্ট",reportSub:"আজ নেওয়া ডোজ",shareReport:"ডেমো রিপোর্ট শেয়ার করুন",
+reminder:"🔔 ওষুধের রিমাইন্ডার",todaySchedule:"আজকের ওষুধের সময়সূচি",next:"⏰ পরবর্তী রিমাইন্ডার",enableVoice:"🔊 ভয়েস রিমাইন্ডার চালু করুন",testVoice:"▶ ভয়েস রিমাইন্ডার পরীক্ষা করুন",notify:"📳 ফোন নোটিফিকেশন চালু করুন",
+voiceDescription:"ভয়েস রিমাইন্ডার ফোনের শব্দ ব্যবহার করে। ডেমোর সময় অ্যাপ খোলা রাখুন এবং অনুমতি দিন।",mobileVoiceHelp:"অ্যাপ খোলার পর ফোনে ভয়েস চালু করতে এই বোতামটি একবার চাপুন।",voiceEnabled:"ভয়েস চালু",safety:"ওষুধের নাম, ডোজ ও সময় সবসময় অভিভাবক, কেয়ারগিভার, ডাক্তার বা ফার্মাসিস্টের সাথে যাচাই করুন।",
+take:"নিন",taken:"নেওয়া হয়েছে",missed:"মিস হয়েছে",upcoming:"আসন্ন",done:"সম্পন্ন!",nextNone:"আজকের সব রিমাইন্ডার সম্পন্ন হয়েছে",noMeds:"কোনো ওষুধ যোগ করা হয়নি।",
+analyzing:"🔎 ছবি বিশ্লেষণ হচ্ছে…",demoResult:"ডেমো ফলাফল: ওষুধ শনাক্ত হয়েছে",verify:"নাম ও ডোজ ব্যবহারের আগে যাচাই করুন।",addToMeds:"আমার ওষুধে যোগ করুন",
+voiceOn:"নমস্কার। PillPal AI ভয়েস রিমাইন্ডার চালু হয়েছে।",noUpcoming:"আজকের সব ওষুধের রিমাইন্ডার সম্পন্ন হয়েছে।",
+reminderVoice:"ওষুধের রিমাইন্ডার। এখন আপনার {name} নেওয়ার সময়। নির্ধারিত ডোজ {dose}।",
+missedMsg:"ওষুধের ডোজ মিস হয়েছে। পরিবার বা কেয়ারগিভারকে জানানো হয়েছে।",notificationDenied:"নোটিফিকেশন চালু হয়নি।",notificationOn:"নোটিফিকেশন চালু হয়েছে!",
+doseTaken:"ডোজ নেওয়া হয়েছে",dosePending:"ডোজ বাকি",medicineAdded:"ওষুধ যোগ হয়েছে",voiceUnsupported:"এই ব্রাউজারে ভয়েস সুবিধা নেই।",voiceUnavailable:"এই ভাষার কণ্ঠস্বর ডিভাইসে ইনস্টল করা নেই। ফোনের Text-to-Speech সেটিংসে ভাষাটি যোগ করে আবার চেষ্টা করুন।",notificationUnsupported:"এই ব্রাউজারে নোটিফিকেশন নেই।",reportCopied:"ডেমো রিপোর্ট কপি হয়েছে"
+},
+ta:{
+brandTag:"உங்கள் ஸ்மார்ட் மருந்து துணை",todayDoses:"இன்றைய மருந்து அளவுகள்",nextReminder:"அடுத்த நினைவூட்டல்",adherence:"மருந்து பின்பற்றல்",adherenceSub:"இந்த வார டெமோ பதிவின் அடிப்படையில்",todayMeds:"இன்றைய மருந்துகள்",
+scanTitle:"📸 மருந்து பட்டையை ஸ்கேன் செய்யவும்",scanDescription:"டெமோவிற்காக மருந்து பட்டையின் படத்தை எடுக்கவும் அல்லது பதிவேற்றவும்.",choosePhoto:"படம் எடுக்க / தேர்வு செய்ய",
+myMeds:"என் மருந்துகள்",addMed:"மருந்தைச் சேர்க்கவும்",medicineName:"மருந்தின் பெயர்",dose:"அளவு, உதா. 1 மாத்திரை",addMedicine:"மருந்தைச் சேர்க்கவும்",
+caregiver:"👁 பராமரிப்பாளர் டாஷ்போர்டு",careDescription:"குடும்பத்திற்கான எளிய தினசரி பார்வை.",dailyReport:"தினசரி அறிக்கை",reportSub:"இன்று எடுத்த மருந்துகள்",shareReport:"டெமோ அறிக்கையைப் பகிரவும்",
+reminder:"🔔 மருந்து நினைவூட்டல்கள்",todaySchedule:"இன்றைய மருந்து அட்டவணை",next:"⏰ அடுத்த நினைவூட்டல்",enableVoice:"🔊 குரல் நினைவூட்டலை இயக்கவும்",testVoice:"▶ குரல் நினைவூட்டலைச் சோதிக்கவும்",notify:"📳 தொலைபேசி அறிவிப்புகளை இயக்கவும்",
+voiceDescription:"குரல் நினைவூட்டல்கள் உங்கள் தொலைபேசியின் குரல் வசதியைப் பயன்படுத்துகின்றன. டெமோவின் போது செயலியைத் திறந்து வைத்திருக்கவும்.",mobileVoiceHelp:"செயலியைத் திறந்த பிறகு தொலைபேசியில் குரலை இயக்க இந்த பொத்தானை ஒருமுறை அழுத்தவும்.",voiceEnabled:"குரல் இயக்கப்பட்டது",safety:"மருந்தின் பெயர், அளவு மற்றும் நேரத்தை பெற்றோர், பராமரிப்பாளர், மருத்துவர் அல்லது மருந்தாளரிடம் உறுதி செய்யவும்.",
+take:"எடுக்கவும்",taken:"எடுக்கப்பட்டது",missed:"தவறியது",upcoming:"வரவுள்ளது",done:"முடிந்தது!",nextNone:"இன்றைய அனைத்து நினைவூட்டல்களும் முடிந்தன",noMeds:"மருந்துகள் சேர்க்கப்படவில்லை.",
+analyzing:"🔎 படம் ஆய்வு செய்யப்படுகிறது…",demoResult:"டெமோ முடிவு: மருந்து கண்டறியப்பட்டது",verify:"பெயர் மற்றும் அளவை பயன்படுத்துவதற்கு முன் சரிபார்க்கவும்.",addToMeds:"என் மருந்துகளில் சேர்க்கவும்",
+voiceOn:"வணக்கம். PillPal AI குரல் நினைவூட்டல்கள் இயக்கப்பட்டுள்ளன.",noUpcoming:"இன்றைய அனைத்து மருந்து நினைவூட்டல்களும் முடிந்தன.",
+reminderVoice:"மருந்து நினைவூட்டல். இப்போது உங்கள் {name} மருந்தை எடுக்க வேண்டிய நேரம். அளவு {dose}.",
+missedMsg:"மருந்து தவறியுள்ளது. குடும்பத்தினர் அல்லது பராமரிப்பாளருக்கு தகவல் அனுப்பப்பட்டது.",notificationDenied:"அறிவிப்புகள் இயக்கப்படவில்லை.",notificationOn:"அறிவிப்புகள் இயக்கப்பட்டன!",
+doseTaken:"மருந்து எடுத்ததாக குறிக்கப்பட்டது",dosePending:"மருந்து நிலுவையில் உள்ளது",medicineAdded:"மருந்து சேர்க்கப்பட்டது",voiceUnsupported:"இந்த உலாவியில் குரல் வசதி இல்லை.",voiceUnavailable:"இந்த மொழிக்கான குரல் இந்த சாதனத்தில் இல்லை. தொலைபேசியின் Text-to-Speech அமைப்புகளில் மொழியைச் சேர்த்து மீண்டும் முயற்சிக்கவும்.",notificationUnsupported:"இந்த உலாவியில் அறிவிப்புகள் இல்லை.",reportCopied:"டெமோ அறிக்கை நகலெடுக்கப்பட்டது"
+},
+te:{
+brandTag:"మీ స్మార్ట్ మెడిసిన్ సహాయకుడు",todayDoses:"ఈరోజు మోతాదులు",nextReminder:"తదుపరి రిమైండర్",adherence:"మందుల అనుసరణ",adherenceSub:"ఈ వారం డెమో రికార్డు ఆధారంగా",todayMeds:"ఈరోజు మందులు",
+scanTitle:"📸 మందు స్ట్రిప్ స్కాన్ చేయండి",scanDescription:"డెమో కోసం మందు స్ట్రిప్ ఫోటో తీయండి లేదా అప్‌లోడ్ చేయండి.",choosePhoto:"ఫోటో తీయండి / ఎంచుకోండి",
+myMeds:"నా మందులు",addMed:"మందు జోడించండి",medicineName:"మందు పేరు",dose:"మోతాదు, ఉదా. 1 టాబ్లెట్",addMedicine:"మందు జోడించండి",
+caregiver:"👁 కేర్‌గివర్ డాష్‌బోర్డ్",careDescription:"కుటుంబ సభ్యుల కోసం సులభమైన రోజువారీ వీక్షణ.",dailyReport:"రోజువారీ నివేదిక",reportSub:"ఈరోజు తీసుకున్న మోతాదులు",shareReport:"డెమో నివేదికను పంచుకోండి",
+reminder:"🔔 మందుల రిమైండర్లు",todaySchedule:"ఈరోజు మందుల షెడ్యూల్",next:"⏰ తదుపరి రిమైండర్",enableVoice:"🔊 వాయిస్ రిమైండర్లు ఆన్ చేయండి",testVoice:"▶ వాయిస్ రిమైండర్ పరీక్షించండి",notify:"📳 ఫోన్ నోటిఫికేషన్లు ఆన్ చేయండి",
+voiceDescription:"వాయిస్ రిమైండర్లు మీ ఫోన్ వాయిస్ సదుపాయాన్ని ఉపయోగిస్తాయి. డెమో సమయంలో యాప్‌ను తెరిచి ఉంచండి.",mobileVoiceHelp:"యాప్ తెరిచిన తర్వాత ఫోన్‌లో వాయిస్ అనుమతించడానికి ఈ బటన్‌ను ఒకసారి నొక్కండి.",voiceEnabled:"వాయిస్ ఆన్",safety:"మందు పేరు, మోతాదు మరియు సమయాన్ని తల్లిదండ్రులు, కేర్‌గివర్, డాక్టర్ లేదా ఫార్మసిస్ట్‌తో నిర్ధారించండి.",
+take:"తీసుకోండి",taken:"తీసుకున్నారు",missed:"మిస్ అయింది",upcoming:"రాబోతోంది",done:"పూర్తయింది!",nextNone:"ఈరోజు అన్ని రిమైండర్లు పూర్తయ్యాయి",noMeds:"మందులు జోడించలేదు.",
+analyzing:"🔎 ఫోటో విశ్లేషణ జరుగుతోంది…",demoResult:"డెమో ఫలితం: మందు గుర్తించబడింది",verify:"పేరు మరియు మోతాదును ఉపయోగించే ముందు ధృవీకరించండి.",addToMeds:"నా మందుల్లో జోడించండి",
+voiceOn:"నమస్కారం. PillPal AI వాయిస్ రిమైండర్లు ఆన్ అయ్యాయి.",noUpcoming:"ఈరోజు అన్ని మందుల రిమైండర్లు పూర్తయ్యాయి.",
+reminderVoice:"మందుల రిమైండర్. ఇప్పుడు మీ {name} తీసుకునే సమయం. నిర్ణయించిన మోతాదు {dose}.",
+missedMsg:"మందు మోతాదు మిస్ అయింది. కుటుంబ సభ్యుడు లేదా కేర్‌గివర్‌కు సమాచారం ఇచ్చాం.",notificationDenied:"నోటిఫికేషన్లు ఆన్ కాలేదు.",notificationOn:"నోటిఫికేషన్లు ఆన్ అయ్యాయి!",
+doseTaken:"మోతాదు తీసుకున్నట్లు గుర్తించబడింది",dosePending:"మోతాదు పెండింగ్‌లో ఉంది",medicineAdded:"మందు జోడించబడింది",voiceUnsupported:"ఈ బ్రౌజర్‌లో వాయిస్ సదుపాయం లేదు.",voiceUnavailable:"ఈ భాషకు సంబంధించిన వాయిస్ ఈ పరికరంలో ఇన్‌స్టాల్ కాలేదు. ఫోన్ Text-to-Speech సెట్టింగ్‌లలో భాషను జోడించి మళ్లీ ప్రయత్నించండి.",notificationUnsupported:"ఈ బ్రౌజర్‌లో నోటిఫికేషన్లు లేవు.",reportCopied:"డెమో నివేదిక కాపీ అయింది"
+},
+mr:{
+brandTag:"तुमचा स्मार्ट औषध साथी",todayDoses:"आजचे डोस",nextReminder:"पुढील रिमाइंडर",adherence:"औषध पालन",adherenceSub:"या आठवड्याच्या डेमो नोंदीवर आधारित",todayMeds:"आजची औषधे",
+scanTitle:"📸 औषधाची पट्टी स्कॅन करा",scanDescription:"डेमोसाठी औषधाच्या पट्टीचा फोटो घ्या किंवा अपलोड करा.",choosePhoto:"फोटो घ्या / निवडा",
+myMeds:"माझी औषधे",addMed:"औषध जोडा",medicineName:"औषधाचे नाव",dose:"डोस, उदा. 1 गोळी",addMedicine:"औषध जोडा",
+caregiver:"👁 काळजीवाहू डॅशबोर्ड",careDescription:"कुटुंबासाठी सोपी दैनंदिन माहिती.",dailyReport:"दैनिक अहवाल",reportSub:"आज घेतलेले डोस",shareReport:"डेमो अहवाल शेअर करा",
+reminder:"🔔 औषध रिमाइंडर",todaySchedule:"आजचे औषध वेळापत्रक",next:"⏰ पुढील रिमाइंडर",enableVoice:"🔊 व्हॉइस रिमाइंडर सुरू करा",testVoice:"▶ व्हॉइस रिमाइंडर तपासा",notify:"📳 फोन नोटिफिकेशन सुरू करा",
+voiceDescription:"व्हॉइस रिमाइंडर तुमच्या फोनचा आवाज वापरतो. डेमोच्या वेळी अॅप उघडे ठेवा.",mobileVoiceHelp:"अॅप उघडल्यानंतर फोनवर व्हॉइस सुरू करण्यासाठी हे बटण एकदा दाबा.",voiceEnabled:"व्हॉइस सुरू",safety:"औषधाचे नाव, डोस आणि वेळ पालक, काळजीवाहू, डॉक्टर किंवा फार्मासिस्टकडून तपासा.",
+take:"घ्या",taken:"घेतले",missed:"चुकले",upcoming:"येणार",done:"पूर्ण!",nextNone:"आजचे सर्व रिमाइंडर पूर्ण झाले",noMeds:"कोणतीही औषधे जोडलेली नाहीत.",
+analyzing:"🔎 फोटो तपासत आहे…",demoResult:"डेमो परिणाम: औषध ओळखले",verify:"नाव आणि डोस वापरण्यापूर्वी तपासा.",addToMeds:"माझ्या औषधांमध्ये जोडा",
+voiceOn:"नमस्कार. PillPal AI व्हॉइस रिमाइंडर सुरू झाले आहेत.",noUpcoming:"आजचे सर्व औषध रिमाइंडर पूर्ण झाले आहेत.",
+reminderVoice:"औषध रिमाइंडर. आता तुमचे {name} घेण्याची वेळ आहे. ठरलेला डोस {dose} आहे.",
+missedMsg:"औषधाचा डोस चुकला. कुटुंबीय किंवा काळजीवाहूला माहिती देण्यात आली.",notificationDenied:"नोटिफिकेशन सुरू झाले नाही.",notificationOn:"नोटिफिकेशन सुरू झाले!",
+doseTaken:"डोस घेतल्याचे चिन्हांकित केले",dosePending:"डोस प्रलंबित",medicineAdded:"औषध जोडले",voiceUnsupported:"या ब्राउझरमध्ये व्हॉइस सुविधा नाही.",voiceUnavailable:"या भाषेचा आवाज या डिव्हाइसवर उपलब्ध नाही. फोनच्या Text-to-Speech सेटिंगमध्ये भाषा जोडा आणि पुन्हा प्रयत्न करा.",notificationUnsupported:"या ब्राउझरमध्ये नोटिफिकेशन नाहीत.",reportCopied:"डेमो अहवाल कॉपी झाला"
+},
+gu:{
+brandTag:"તમારો સ્માર્ટ દવા સાથી",todayDoses:"આજના ડોઝ",nextReminder:"આગળનું રિમાઇન્ડર",adherence:"દવા પાલન",adherenceSub:"આ અઠવાડિયાના ડેમો રેકોર્ડ આધારે",todayMeds:"આજની દવાઓ",
+scanTitle:"📸 દવાની પટ્ટી સ્કેન કરો",scanDescription:"ડેમો માટે દવાની પટ્ટીનો ફોટો લો અથવા અપલોડ કરો.",choosePhoto:"ફોટો લો / પસંદ કરો",
+myMeds:"મારી દવાઓ",addMed:"દવા ઉમેરો",medicineName:"દવાનું નામ",dose:"ડોઝ, જેમ કે 1 ટેબ્લેટ",addMedicine:"દવા ઉમેરો",
+caregiver:"👁 કેરગિવર ડેશબોર્ડ",careDescription:"પરિવાર માટે સરળ દૈનિક માહિતી.",dailyReport:"દૈનિક રિપોર્ટ",reportSub:"આજે લેવાયેલા ડોઝ",shareReport:"ડેમો રિપોર્ટ શેર કરો",
+reminder:"🔔 દવા રિમાઇન્ડર",todaySchedule:"આજનું દવા સમયપત્રક",next:"⏰ આગળનું રિમાઇન્ડર",enableVoice:"🔊 વૉઇસ રિમાઇન્ડર ચાલુ કરો",testVoice:"▶ વૉઇસ રિમાઇન્ડર ટેસ્ટ કરો",notify:"📳 ફોન નોટિફિકેશન ચાલુ કરો",
+voiceDescription:"વૉઇસ રિમાઇન્ડર તમારા ફોનની વૉઇસ સુવિધાનો ઉપયોગ કરે છે. ડેમો દરમિયાન એપ ખોલેલી રાખો.",mobileVoiceHelp:"એપ ખોલ્યા પછી ફોન પર વૉઇસ ચાલુ કરવા માટે આ બટન એક વાર દબાવો.",voiceEnabled:"વૉઇસ ચાલુ",safety:"દવાનું નામ, ડોઝ અને સમય માતા-પિતા, કેરગિવર, ડૉક્ટર અથવા ફાર્માસિસ્ટ સાથે ચકાસો.",
+take:"લો",taken:"લીધી",missed:"છૂટી",upcoming:"આવનારી",done:"પૂર્ણ!",nextNone:"આજના બધા રિમાઇન્ડર પૂર્ણ થયા",noMeds:"કોઈ દવા ઉમેરાઈ નથી.",
+analyzing:"🔎 ફોટો તપાસાઈ રહ્યો છે…",demoResult:"ડેમો પરિણામ: દવા ઓળખાઈ",verify:"નામ અને ડોઝ ઉપયોગ પહેલાં ચકાસો.",addToMeds:"મારી દવાઓમાં ઉમેરો",
+voiceOn:"નમસ્તે. PillPal AI વૉઇસ રિમાઇન્ડર ચાલુ થયા છે.",noUpcoming:"આજના બધા દવા રિમાઇન્ડર પૂર્ણ થયા છે.",
+reminderVoice:"દવા રિમાઇન્ડર. હવે તમારી {name} લેવાનો સમય છે. નિર્ધારિત ડોઝ {dose} છે.",
+missedMsg:"દવાનો ડોઝ ચૂકી ગયો. પરિવાર અથવા કેરગિવરને જાણ કરવામાં આવી છે.",notificationDenied:"નોટિફિકેશન ચાલુ થયા નથી.",notificationOn:"નોટિફિકેશન ચાલુ થયા!",
+doseTaken:"ડોઝ લીધેલો દર્શાવ્યો",dosePending:"ડોઝ બાકી",medicineAdded:"દવા ઉમેરાઈ",voiceUnsupported:"આ બ્રાઉઝરમાં વૉઇસ સુવિધા નથી.",voiceUnavailable:"આ ભાષાનો અવાજ આ ઉપકરણમાં ઉપલબ્ધ નથી. ફોનની Text-to-Speech સેટિંગમાં ભાષા ઉમેરો અને ફરી પ્રયાસ કરો.",notificationUnsupported:"આ બ્રાઉઝરમાં નોટિફિકેશન નથી.",reportCopied:"ડેમો રિપોર્ટ કૉપી થયો"
+},
+kn:{
+brandTag:"ನಿಮ್ಮ ಸ್ಮಾರ್ಟ್ ಔಷಧಿ ಸಹಾಯಕ",todayDoses:"ಇಂದಿನ ಡೋಸ್‌ಗಳು",nextReminder:"ಮುಂದಿನ ನೆನಪಿನ ಸೂಚನೆ",adherence:"ಔಷಧಿ ಪಾಲನೆ",adherenceSub:"ಈ ವಾರದ ಡೆಮೊ ದಾಖಲೆಯ ಆಧಾರದಲ್ಲಿ",todayMeds:"ಇಂದಿನ ಔಷಧಿಗಳು",
+scanTitle:"📸 ಔಷಧಿ ಪಟ್ಟಿಯನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",scanDescription:"ಡೆಮೊಗಾಗಿ ಔಷಧಿ ಪಟ್ಟಿಯ ಫೋಟೋ ತೆಗೆದು ಅಥವಾ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",choosePhoto:"ಫೋಟೋ ತೆಗೆ / ಆಯ್ಕೆಮಾಡಿ",
+myMeds:"ನನ್ನ ಔಷಧಿಗಳು",addMed:"ಔಷಧಿ ಸೇರಿಸಿ",medicineName:"ಔಷಧಿಯ ಹೆಸರು",dose:"ಡೋಸ್, ಉದಾ. 1 ಮಾತ್ರೆ",addMedicine:"ಔಷಧಿ ಸೇರಿಸಿ",
+caregiver:"👁 ಕೇರ್‌ಗಿವರ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",careDescription:"ಕುಟುಂಬಕ್ಕಾಗಿ ಸರಳ ದಿನನಿತ್ಯದ ಮಾಹಿತಿ.",dailyReport:"ದೈನಂದಿನ ವರದಿ",reportSub:"ಇಂದು ತೆಗೆದುಕೊಂಡ ಡೋಸ್‌ಗಳು",shareReport:"ಡೆಮೊ ವರದಿ ಹಂಚಿಕೊಳ್ಳಿ",
+reminder:"🔔 ಔಷಧಿ ನೆನಪಿನ ಸೂಚನೆಗಳು",todaySchedule:"ಇಂದಿನ ಔಷಧಿ ವೇಳಾಪಟ್ಟಿ",next:"⏰ ಮುಂದಿನ ನೆನಪಿನ ಸೂಚನೆ",enableVoice:"🔊 ಧ್ವನಿ ನೆನಪಿನ ಸೂಚನೆಗಳನ್ನು ಆನ್ ಮಾಡಿ",testVoice:"▶ ಧ್ವನಿ ಪರೀಕ್ಷಿಸಿ",notify:"📳 ಫೋನ್ ಸೂಚನೆಗಳನ್ನು ಆನ್ ಮಾಡಿ",
+voiceDescription:"ಧ್ವನಿ ನೆನಪಿನ ಸೂಚನೆಗಳು ನಿಮ್ಮ ಫೋನ್‌ನ ಧ್ವನಿ ಸೌಲಭ್ಯವನ್ನು ಬಳಸುತ್ತವೆ. ಡೆಮೊ ಸಮಯದಲ್ಲಿ ಆ್ಯಪ್ ತೆರೆದಿರಲಿ.",mobileVoiceHelp:"ಆ್ಯಪ್ ತೆರೆದ ನಂತರ ಫೋನ್‌ನಲ್ಲಿ ಧ್ವನಿ ಸಕ್ರಿಯಗೊಳಿಸಲು ಈ ಬಟನ್ ಒಮ್ಮೆ ಒತ್ತಿರಿ.",voiceEnabled:"ಧ್ವನಿ ಸಕ್ರಿಯ",safety:"ಔಷಧಿಯ ಹೆಸರು, ಡೋಸ್ ಮತ್ತು ಸಮಯವನ್ನು ಪೋಷಕರು, ಕೇರ್‌ಗಿವರ್, ವೈದ್ಯರು ಅಥವಾ ಫಾರ್ಮಸಿಸ್ಟ್ ಜೊತೆ ಖಚಿತಪಡಿಸಿ.",
+take:"ತೆಗೆದುಕೊಳ್ಳಿ",taken:"ತೆಗೆದುಕೊಂಡಿದೆ",missed:"ತಪ್ಪಿದೆ",upcoming:"ಬರಲಿದೆ",done:"ಪೂರ್ಣ!",nextNone:"ಇಂದಿನ ಎಲ್ಲಾ ನೆನಪಿನ ಸೂಚನೆಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ",noMeds:"ಯಾವುದೇ ಔಷಧಿ ಸೇರಿಸಲಾಗಿಲ್ಲ.",
+analyzing:"🔎 ಫೋಟೋ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…",demoResult:"ಡೆಮೊ ಫಲಿತಾಂಶ: ಔಷಧಿ ಗುರುತಿಸಲಾಗಿದೆ",verify:"ಹೆಸರು ಮತ್ತು ಡೋಸ್ ಬಳಸುವ ಮೊದಲು ಪರಿಶೀಲಿಸಿ.",addToMeds:"ನನ್ನ ಔಷಧಿಗಳಿಗೆ ಸೇರಿಸಿ",
+voiceOn:"ನಮಸ್ಕಾರ. PillPal AI ಧ್ವನಿ ನೆನಪಿನ ಸೂಚನೆಗಳು ಆನ್ ಆಗಿವೆ.",noUpcoming:"ಇಂದಿನ ಎಲ್ಲಾ ಔಷಧಿ ನೆನಪಿನ ಸೂಚನೆಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ.",
+reminderVoice:"ಔಷಧಿ ನೆನಪಿನ ಸೂಚನೆ. ಈಗ ನಿಮ್ಮ {name} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ನಿಗದಿತ ಡೋಸ್ {dose}.",
+missedMsg:"ಔಷಧಿ ಡೋಸ್ ತಪ್ಪಿದೆ. ಕುಟುಂಬ ಅಥವಾ ಕೇರ್‌ಗಿವರ್‌ಗೆ ಮಾಹಿತಿ ನೀಡಲಾಗಿದೆ.",notificationDenied:"ಸೂಚನೆಗಳು ಆನ್ ಆಗಿಲ್ಲ.",notificationOn:"ಸೂಚನೆಗಳು ಆನ್ ಆಗಿವೆ!",
+doseTaken:"ಡೋಸ್ ತೆಗೆದುಕೊಂಡಿದೆ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ",dosePending:"ಡೋಸ್ ಬಾಕಿಯಿದೆ",medicineAdded:"ಔಷಧಿ ಸೇರಿಸಲಾಗಿದೆ",voiceUnsupported:"ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಧ್ವನಿ ಸೌಲಭ್ಯವಿಲ್ಲ.",voiceUnavailable:"ಈ ಭಾಷೆಯ ಧ್ವನಿ ಈ ಸಾಧನದಲ್ಲಿ ಲಭ್ಯವಿಲ್ಲ. ಫೋನ್‌ನ Text-to-Speech ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಭಾಷೆಯನ್ನು ಸೇರಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",notificationUnsupported:"ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಸೂಚನೆಗಳಿಲ್ಲ.",reportCopied:"ಡೆಮೊ ವರದಿ ನಕಲಿಸಲಾಗಿದೆ"
+},
+ml:{
+brandTag:"നിങ്ങളുടെ സ്മാർട്ട് മരുന്ന് സഹായി",todayDoses:"ഇന്നത്തെ ഡോസുകൾ",nextReminder:"അടുത്ത ഓർമ്മപ്പെടുത്തൽ",adherence:"മരുന്ന് പാലനം",adherenceSub:"ഈ ആഴ്ചയിലെ ഡെമോ രേഖയുടെ അടിസ്ഥാനത്തിൽ",todayMeds:"ഇന്നത്തെ മരുന്നുകൾ",
+scanTitle:"📸 മരുന്ന് സ്ട്രിപ്പ് സ്കാൻ ചെയ്യുക",scanDescription:"ഡെമോയ്ക്കായി മരുന്ന് സ്ട്രിപ്പിന്റെ ചിത്രം എടുക്കുകയോ അപ്‌ലോഡ് ചെയ്യുകയോ ചെയ്യുക.",choosePhoto:"ഫോട്ടോ എടുക്കുക / തിരഞ്ഞെടുക്കുക",
+myMeds:"എന്റെ മരുന്നുകൾ",addMed:"മരുന്ന് ചേർക്കുക",medicineName:"മരുന്നിന്റെ പേര്",dose:"ഡോസ്, ഉദാ. 1 ഗുളിക",addMedicine:"മരുന്ന് ചേർക്കുക",
+caregiver:"👁 കെയർഗിവർ ഡാഷ്ബോർഡ്",careDescription:"കുടുംബത്തിനായി ലളിതമായ ദൈനംദിന കാഴ്ച.",dailyReport:"ദൈനംദിന റിപ്പോർട്ട്",reportSub:"ഇന്ന് എടുത്ത ഡോസുകൾ",shareReport:"ഡെമോ റിപ്പോർട്ട് പങ്കിടുക",
+reminder:"🔔 മരുന്ന് ഓർമ്മപ്പെടുത്തലുകൾ",todaySchedule:"ഇന്നത്തെ മരുന്ന് ഷെഡ്യൂൾ",next:"⏰ അടുത്ത ഓർമ്മപ്പെടുത്തൽ",enableVoice:"🔊 വോയ്സ് റിമൈൻഡർ ഓൺ ചെയ്യുക",testVoice:"▶ വോയ്സ് റിമൈൻഡർ പരീക്ഷിക്കുക",notify:"📳 ഫോൺ അറിയിപ്പുകൾ ഓൺ ചെയ്യുക",
+voiceDescription:"വോയ്സ് റിമൈൻഡറുകൾ നിങ്ങളുടെ ഫോണിന്റെ ശബ്ദ സൗകര്യം ഉപയോഗിക്കുന്നു. ഡെമോ സമയത്ത് ആപ്പ് തുറന്ന് വയ്ക്കുക.",mobileVoiceHelp:"ആപ്പ് തുറന്ന ശേഷം ഫോണിൽ വോയ്സ് പ്രവർത്തിപ്പിക്കാൻ ഈ ബട്ടൺ ഒരിക്കൽ അമർത്തുക.",voiceEnabled:"വോയ്സ് പ്രവർത്തിച്ചു",safety:"മരുന്നിന്റെ പേര്, ഡോസ്, സമയം എന്നിവ മാതാപിതാവിനോടോ കെയർഗിവറിനോടോ ഡോക്ടറോടോ ഫാർമസിസ്റ്റിനോടോ സ്ഥിരീകരിക്കുക.",
+take:"എടുക്കുക",taken:"എടുത്തു",missed:"മിസ് ആയി",upcoming:"വരാനിരിക്കുന്നത്",done:"പൂർത്തിയായി!",nextNone:"ഇന്നത്തെ എല്ലാ ഓർമ്മപ്പെടുത്തലുകളും പൂർത്തിയായി",noMeds:"മരുന്നുകളൊന്നും ചേർത്തിട്ടില്ല.",
+analyzing:"🔎 ചിത്രം പരിശോധിക്കുന്നു…",demoResult:"ഡെമോ ഫലം: മരുന്ന് കണ്ടെത്തി",verify:"പേരും ഡോസും ഉപയോഗിക്കുന്നതിന് മുമ്പ് പരിശോധിക്കുക.",addToMeds:"എന്റെ മരുന്നുകളിൽ ചേർക്കുക",
+voiceOn:"നമസ്കാരം. PillPal AI വോയ്സ് റിമൈൻഡറുകൾ ഓൺ ചെയ്തു.",noUpcoming:"ഇന്നത്തെ എല്ലാ മരുന്ന് റിമൈൻഡറുകളും പൂർത്തിയായി.",
+reminderVoice:"മരുന്ന് ഓർമ്മപ്പെടുത്തൽ. ഇപ്പോൾ നിങ്ങളുടെ {name} എടുക്കേണ്ട സമയമാണ്. നിശ്ചയിച്ച ഡോസ് {dose}.",
+missedMsg:"മരുന്നിന്റെ ഡോസ് മിസ് ആയി. കുടുംബത്തെയോ കെയർഗിവറെയോ അറിയിച്ചു.",notificationDenied:"അറിയിപ്പുകൾ ഓൺ ചെയ്തിട്ടില്ല.",notificationOn:"അറിയിപ്പുകൾ ഓൺ ചെയ്തു!",
+doseTaken:"ഡോസ് എടുത്തതായി അടയാളപ്പെടുത്തി",dosePending:"ഡോസ് ബാക്കിയുണ്ട്",medicineAdded:"മരുന്ന് ചേർത്തു",voiceUnsupported:"ഈ ബ്രൗസറിൽ വോയ്സ് സൗകര്യമില്ല.",voiceUnavailable:"ഈ ഭാഷയുടെ ശബ്ദം ഈ ഉപകരണത്തിൽ ലഭ്യമല്ല. ഫോണിലെ Text-to-Speech ക്രമീകരണങ്ങളിൽ ഭാഷ ചേർത്ത് വീണ്ടും ശ്രമിക്കുക.",notificationUnsupported:"ഈ ബ്രൗസറിൽ അറിയിപ്പുകൾ ലഭ്യമല്ല.",reportCopied:"ഡെമോ റിപ്പോർട്ട് കോപ്പി ചെയ്തു"
+},
+pa:{
+brandTag:"ਤੁਹਾਡਾ ਸਮਾਰਟ ਦਵਾਈ ਸਾਥੀ",todayDoses:"ਅੱਜ ਦੀਆਂ ਖੁਰਾਕਾਂ",nextReminder:"ਅਗਲਾ ਰਿਮਾਈਂਡਰ",adherence:"ਦਵਾਈ ਪਾਲਣਾ",adherenceSub:"ਇਸ ਹਫ਼ਤੇ ਦੇ ਡੈਮੋ ਰਿਕਾਰਡ ਦੇ ਆਧਾਰ 'ਤੇ",todayMeds:"ਅੱਜ ਦੀਆਂ ਦਵਾਈਆਂ",
+scanTitle:"📸 ਦਵਾਈ ਦੀ ਪੱਟੀ ਸਕੈਨ ਕਰੋ",scanDescription:"ਡੈਮੋ ਲਈ ਦਵਾਈ ਦੀ ਪੱਟੀ ਦੀ ਫੋਟੋ ਲਓ ਜਾਂ ਅਪਲੋਡ ਕਰੋ।",choosePhoto:"ਫੋਟੋ ਲਓ / ਚੁਣੋ",
+myMeds:"ਮੇਰੀਆਂ ਦਵਾਈਆਂ",addMed:"ਦਵਾਈ ਸ਼ਾਮਲ ਕਰੋ",medicineName:"ਦਵਾਈ ਦਾ ਨਾਮ",dose:"ਖੁਰਾਕ, ਜਿਵੇਂ 1 ਗੋਲੀ",addMedicine:"ਦਵਾਈ ਸ਼ਾਮਲ ਕਰੋ",
+caregiver:"👁 ਕੇਅਰਗਿਵਰ ਡੈਸ਼ਬੋਰਡ",careDescription:"ਪਰਿਵਾਰ ਲਈ ਸੌਖੀ ਰੋਜ਼ਾਨਾ ਜਾਣਕਾਰੀ।",dailyReport:"ਰੋਜ਼ਾਨਾ ਰਿਪੋਰਟ",reportSub:"ਅੱਜ ਲਈਆਂ ਖੁਰਾਕਾਂ",shareReport:"ਡੈਮੋ ਰਿਪੋਰਟ ਸਾਂਝੀ ਕਰੋ",
+reminder:"🔔 ਦਵਾਈ ਰਿਮਾਈਂਡਰ",todaySchedule:"ਅੱਜ ਦਾ ਦਵਾਈ ਸਮਾਂ-ਸਾਰਣੀ",next:"⏰ ਅਗਲਾ ਰਿਮਾਈਂਡਰ",enableVoice:"🔊 ਵੌਇਸ ਰਿਮਾਈਂਡਰ ਚਾਲੂ ਕਰੋ",testVoice:"▶ ਵੌਇਸ ਰਿਮਾਈਂਡਰ ਟੈਸਟ ਕਰੋ",notify:"📳 ਫੋਨ ਨੋਟੀਫਿਕੇਸ਼ਨ ਚਾਲੂ ਕਰੋ",
+voiceDescription:"ਵੌਇਸ ਰਿਮਾਈਂਡਰ ਤੁਹਾਡੇ ਫੋਨ ਦੀ ਆਵਾਜ਼ ਵਰਤਦੇ ਹਨ। ਡੈਮੋ ਦੌਰਾਨ ਐਪ ਖੁੱਲ੍ਹੀ ਰੱਖੋ।",mobileVoiceHelp:"ਐਪ ਖੋਲ੍ਹਣ ਤੋਂ ਬਾਅਦ ਫੋਨ 'ਤੇ ਵੌਇਸ ਚਾਲੂ ਕਰਨ ਲਈ ਇਹ ਬਟਨ ਇੱਕ ਵਾਰ ਦਬਾਓ।",voiceEnabled:"ਵੌਇਸ ਚਾਲੂ",safety:"ਦਵਾਈ ਦਾ ਨਾਮ, ਖੁਰਾਕ ਅਤੇ ਸਮਾਂ ਮਾਪਿਆਂ, ਕੇਅਰਗਿਵਰ, ਡਾਕਟਰ ਜਾਂ ਫਾਰਮਾਸਿਸਟ ਨਾਲ ਪੱਕਾ ਕਰੋ.",
+take:"ਲਓ",taken:"ਲਈ ਗਈ",missed:"ਛੁੱਟ ਗਈ",upcoming:"ਆਉਣ ਵਾਲੀ",done:"ਪੂਰਾ!",nextNone:"ਅੱਜ ਦੇ ਸਾਰੇ ਰਿਮਾਈਂਡਰ ਪੂਰੇ ਹੋ ਗਏ",noMeds:"ਕੋਈ ਦਵਾਈ ਸ਼ਾਮਲ ਨਹੀਂ ਕੀਤੀ ਗਈ।",
+analyzing:"🔎 ਤਸਵੀਰ ਦੀ ਜਾਂਚ ਹੋ ਰਹੀ ਹੈ…",demoResult:"ਡੈਮੋ ਨਤੀਜਾ: ਦਵਾਈ ਪਛਾਣੀ ਗਈ",verify:"ਨਾਮ ਅਤੇ ਖੁਰਾਕ ਵਰਤਣ ਤੋਂ ਪਹਿਲਾਂ ਜਾਂਚੋ.",addToMeds:"ਮੇਰੀਆਂ ਦਵਾਈਆਂ ਵਿੱਚ ਸ਼ਾਮਲ ਕਰੋ",
+voiceOn:"ਸਤ ਸ੍ਰੀ ਅਕਾਲ। PillPal AI ਵੌਇਸ ਰਿਮਾਈਂਡਰ ਚਾਲੂ ਹਨ।",noUpcoming:"ਅੱਜ ਦੇ ਸਾਰੇ ਦਵਾਈ ਰਿਮਾਈਂਡਰ ਪੂਰੇ ਹੋ ਗਏ ਹਨ।",
+reminderVoice:"ਦਵਾਈ ਰਿਮਾਈਂਡਰ। ਹੁਣ ਤੁਹਾਡੀ {name} ਲੈਣ ਦਾ ਸਮਾਂ ਹੈ। ਨਿਰਧਾਰਤ ਖੁਰਾਕ {dose} ਹੈ।",
+missedMsg:"ਦਵਾਈ ਦੀ ਖੁਰਾਕ ਛੁੱਟ ਗਈ ਹੈ। ਪਰਿਵਾਰ ਜਾਂ ਕੇਅਰਗਿਵਰ ਨੂੰ ਸੂਚਿਤ ਕੀਤਾ ਗਿਆ ਹੈ।",notificationDenied:"ਨੋਟੀਫਿਕੇਸ਼ਨ ਚਾਲੂ ਨਹੀਂ ਹੋਏ।",notificationOn:"ਨੋਟੀਫਿਕੇਸ਼ਨ ਚਾਲੂ ਹੋ ਗਏ!",
+doseTaken:"ਖੁਰਾਕ ਲਈ ਗਈ",dosePending:"ਖੁਰਾਕ ਬਾਕੀ",medicineAdded:"ਦਵਾਈ ਸ਼ਾਮਲ ਕੀਤੀ ਗਈ",voiceUnsupported:"ਇਸ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਵੌਇਸ ਸਹੂਲਤ ਨਹੀਂ ਹੈ।",voiceUnavailable:"ਇਸ ਭਾਸ਼ਾ ਦੀ ਆਵਾਜ਼ ਇਸ ਡਿਵਾਈਸ ਵਿੱਚ ਉਪਲਬਧ ਨਹੀਂ ਹੈ। ਫੋਨ ਦੀ Text-to-Speech ਸੈਟਿੰਗ ਵਿੱਚ ਭਾਸ਼ਾ ਸ਼ਾਮਲ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",notificationUnsupported:"ਇਸ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਨੋਟੀਫਿਕੇਸ਼ਨ ਨਹੀਂ ਹਨ।",reportCopied:"ਡੈਮੋ ਰਿਪੋਰਟ ਕਾਪੀ ਹੋ ਗਈ"
+},
+ur:{
+brandTag:"آپ کا اسمارٹ دوا ساتھی",todayDoses:"آج کی خوراکیں",nextReminder:"اگلا یاددہانی",adherence:"ادویات کی پابندی",adherenceSub:"اس ہفتے کے ڈیمو ریکارڈ کی بنیاد پر",todayMeds:"آج کی ادویات",
+scanTitle:"📸 دوا کی پٹی اسکین کریں",scanDescription:"ڈیمو کے لیے دوا کی پٹی کی تصویر لیں یا اپ لوڈ کریں۔",choosePhoto:"تصویر لیں / منتخب کریں",
+myMeds:"میری ادویات",addMed:"دوا شامل کریں",medicineName:"دوا کا نام",dose:"خوراک، مثلاً 1 گولی",addMedicine:"دوا شامل کریں",
+caregiver:"👁 دیکھ بھال ڈیش بورڈ",careDescription:"خاندان کے لیے آسان روزانہ منظر۔",dailyReport:"روزانہ رپورٹ",reportSub:"آج لی گئی خوراکیں",shareReport:"ڈیمو رپورٹ شیئر کریں",
+reminder:"🔔 دوا کی یاددہانیاں",todaySchedule:"آج کا دوا شیڈول",next:"⏰ اگلی یاددہانی",enableVoice:"🔊 وائس یاددہانی آن کریں",testVoice:"▶ وائس یاددہانی آزمائیں",notify:"📳 فون نوٹیفکیشن آن کریں",
+voiceDescription:"وائس یاددہانیاں آپ کے فون کی آواز استعمال کرتی ہیں۔ ڈیمو کے دوران ایپ کھلی رکھیں۔",mobileVoiceHelp:"ایپ کھولنے کے بعد فون پر وائس فعال کرنے کے لیے یہ بٹن ایک بار دبائیں۔",voiceEnabled:"وائس فعال",safety:"دوا کا نام، خوراک اور وقت والدین، دیکھ بھال کرنے والے، ڈاکٹر یا فارماسسٹ سے تصدیق کریں۔",
+take:"لیں",taken:"لی گئی",missed:"چھوٹ گئی",upcoming:"آنے والی",done:"مکمل!",nextNone:"آج کی تمام یاددہانیاں مکمل ہو گئیں",noMeds:"کوئی دوا شامل نہیں کی گئی۔",
+analyzing:"🔎 تصویر کا تجزیہ ہو رہا ہے…",demoResult:"ڈیمو نتیجہ: دوا کی شناخت ہوگئی",verify:"نام اور خوراک استعمال سے پہلے چیک کریں۔",addToMeds:"میری ادویات میں شامل کریں",
+voiceOn:"السلام علیکم۔ PillPal AI وائس یاددہانیاں آن ہوگئی ہیں۔",noUpcoming:"آج کی تمام دوا یاددہانیاں مکمل ہو گئی ہیں۔",
+reminderVoice:"دوا کی یاددہانی۔ اب آپ کی {name} لینے کا وقت ہے۔ مقررہ خوراک {dose} ہے۔",
+missedMsg:"دوا کی خوراک چھوٹ گئی ہے۔ خاندان یا دیکھ بھال کرنے والے کو اطلاع دی گئی ہے۔",notificationDenied:"نوٹیفکیشن آن نہیں ہوئے۔",notificationOn:"نوٹیفکیشن آن ہوگئے!",
+doseTaken:"خوراک لی گئی",dosePending:"خوراک باقی ہے",medicineAdded:"دوا شامل ہوگئی",voiceUnsupported:"اس براؤزر میں وائس سہولت موجود نہیں۔",voiceUnavailable:"اس زبان کی آواز اس ڈیوائس پر دستیاب نہیں۔ فون کی Text-to-Speech سیٹنگز میں زبان شامل کریں اور دوبارہ کوشش کریں.",notificationUnsupported:"اس براؤزر میں نوٹیفکیشن موجود نہیں۔",reportCopied:"ڈیمو رپورٹ کاپی ہوگئی"
+}
+};
+let currentLang=localStorage.getItem('pillpal_lang')||'en';
+function tr(k){return (i18n[currentLang]||i18n.en)[k]||i18n.en[k]||k}
+function updateVoiceStatus(){
+ const e=document.getElementById('voiceStatus');
+ if(!e)return;
+ loadVoices();
+ const v=getLocalVoice();
+ e.textContent=v ? `🔊 ${v.name} (${v.lang})` : (currentLang==='en' ? '🔊 English voice ready' : '⚠️ '+tr('voiceUnavailable'));
+}
+function setLanguage(lang){
+ currentLang=lang; localStorage.setItem('pillpal_lang',lang);
+ applyLanguage(); render(); updateVoiceStatus();
+}
+function applyLanguage(){
+ const ids={
+ brandTag:'brandTag',todayDosesLabel:'todayDoses',nextReminderLabel:'nextReminder',adherenceLabel:'adherence',adherenceSub:'adherenceSub',todayMedsTitle:'todayMeds',
+ scanTitle:'scanTitle',scanDescription:'scanDescription',choosePhoto:'choosePhoto',myMedsTitle:'myMeds',addMedTitle:'addMed',addMedBtn:'addMedicine',
+ careTitle:'caregiver',careDescription:'careDescription',reportTitle:'dailyReport',reportSub:'reportSub',shareReportBtn:'shareReport',
+ reminderTitle:'reminder',reminderSubtitle:'todaySchedule',nextTitle:'next',enableVoiceBtn:'enableVoice',testVoiceBtn:'testVoice',notifyBtn:'notify',
+ voiceDescription:'voiceDescription',safetyNote:'safety',footer:'brandTag'
+ };
+ Object.entries(ids).forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.textContent=tr(key)});
+ const name=document.getElementById('medName'), dose=document.getElementById('medDose');
+ if(name) name.placeholder=tr('medicineName'); if(dose)dose.placeholder=tr('dose');
+ const lang=document.getElementById('language'); if(lang)lang.value=currentLang;
+ const vh=document.getElementById('mobileVoiceHelp'); if(vh)vh.textContent=tr('mobileVoiceHelp');
+ const vb=document.getElementById('mobileVoiceTip'); if(vb)vb.textContent=(mobileVoiceUnlocked?'✅ ':'📱 ')+tr(mobileVoiceUnlocked?'voiceEnabled':'enableVoice');
+}
+function markMissedDoses(){
+ const now=new Date();
+ state.meds.forEach(m=>{
+   if(m.taken || m.missed) return;
+   let [h,mi]=m.time.split(':').map(Number);
+   let scheduled=new Date(now); scheduled.setHours(h,mi,0,0);
+   // Demo rule: a dose becomes MISSED 30 minutes after its scheduled time.
+   if(now-scheduled >= 30*60000){
+     m.missed=true;
+     const stamp=new Date().toISOString().slice(0,10)+'_'+m.id;
+     if(localStorage.getItem('pillpal_missed_'+stamp)!=='1'){
+       localStorage.setItem('pillpal_missed_'+stamp,'1');
+       toast('⚠️ '+tr('missedMsg'));
+       if('Notification' in window && Notification.permission==='granted')
+         new Notification('PillPal AI',{body:tr('missedMsg')});
+       if(voiceEnabled) speak(tr('missedMsg'));
+     }
+   }
+ });
+}
+function updateCountdown(){
+ let now=new Date(), candidates=state.meds.filter(m=>!m.taken).map(m=>{
+   let [h,mi]=m.time.split(':').map(Number), d=new Date(now); d.setHours(h,mi,0,0);
+   if(d<now)d.setDate(d.getDate()+1); return {...m,d};
+ }).sort((a,b)=>a.d-b.d);
+ let n=candidates[0];
+ if(!n){reminderCountdown.textContent=tr('done');reminderNextName.textContent=tr('nextNone');return}
+ let mins=Math.max(0,Math.ceil((n.d-now)/60000)), hrs=Math.floor(mins/60), mm=mins%60;
+ reminderCountdown.textContent=hrs?`${hrs}h ${mm}m`:`${mm} min`;
+ reminderNextName.textContent=`${n.name} • ${fmt(n.time)}`;
+}
+
+let voiceEnabled=false;
+let availableVoices=[];
+let mobileVoiceUnlocked=false;
+function loadVoices(){
+  if(!('speechSynthesis' in window)) return;
+  availableVoices=speechSynthesis.getVoices()||[];
+}
+if('speechSynthesis' in window){
+  loadVoices();
+  speechSynthesis.addEventListener('voiceschanged',()=>{loadVoices(); updateVoiceStatus();});
+}
+const voiceLangs={en:'en-IN',hi:'hi-IN',bn:'bn-IN',ta:'ta-IN',te:'te-IN',mr:'mr-IN',gu:'gu-IN',kn:'kn-IN',ml:'ml-IN',pa:'pa-IN',ur:'ur-IN'};
+function getLocalVoice(){
+  const target=voiceLangs[currentLang]||'en-IN';
+  const prefix=target.split('-')[0].toLowerCase();
+  return availableVoices.find(v=>v.lang.toLowerCase()===target.toLowerCase())
+      || availableVoices.find(v=>v.lang.toLowerCase().startsWith(prefix+'-'))
+      || availableVoices.find(v=>v.lang.toLowerCase()===prefix);
+}
+function speak(text){
+  if(!('speechSynthesis' in window)){toast(tr('voiceUnsupported'));return false}
+  loadVoices();
+  const voice=getLocalVoice();
+  if(!voice && currentLang!=='en'){toast(tr('voiceUnavailable'));return false}
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=0.88; u.pitch=1;
+    u.lang=voice ? voice.lang : 'en-IN';
+    if(voice) u.voice=voice;
+    u.onstart=()=>{mobileVoiceUnlocked=true};
+    speechSynthesis.speak(u);
+    return true;
+  }catch(e){toast(tr('voiceUnsupported'));return false}
+}
+function activateMobileVoice(){
+  if(!('speechSynthesis' in window)){toast(tr('voiceUnsupported'));return}
+  mobileVoiceUnlocked=true;
+  // This is intentionally called from a button tap, which mobile browsers permit.
+  speak(tr('voiceOn'));
+  const b=document.getElementById('mobileVoiceTip');
+  if(b)b.textContent='✅ '+tr('voiceEnabled');
+}
+function userGestureUnlock(){
+  if(!mobileVoiceUnlocked && 'speechSynthesis' in window){
+    // Do not speak unexpectedly; just load/prime the speech engine.
+    loadVoices();
+  }
+}
+document.addEventListener('touchstart',userGestureUnlock,{passive:true});
+document.addEventListener('click',userGestureUnlock,{passive:true});
+function markMissedDoses(){
+ const now=new Date();
+ state.meds.forEach(m=>{
+   if(m.taken || m.missed) return;
+   let [h,mi]=m.time.split(':').map(Number);
+   let scheduled=new Date(now); scheduled.setHours(h,mi,0,0);
+   // Demo rule: a dose becomes MISSED 30 minutes after its scheduled time.
+   if(now-scheduled >= 30*60000){
+     m.missed=true;
+     const stamp=new Date().toISOString().slice(0,10)+'_'+m.id;
+     if(localStorage.getItem('pillpal_missed_'+stamp)!=='1'){
+       localStorage.setItem('pillpal_missed_'+stamp,'1');
+       toast('⚠️ '+tr('missedMsg'));
+       if('Notification' in window && Notification.permission==='granted')
+         new Notification('PillPal AI',{body:tr('missedMsg')});
+       if(voiceEnabled) speak(tr('missedMsg'));
+     }
+   }
+ });
+}
+function updateCountdown(){
+ let now=new Date(), candidates=state.meds.filter(m=>!m.taken).map(m=>{
+   let [h,mi]=m.time.split(':').map(Number), d=new Date(now); d.setHours(h,mi,0,0);
+   if(d<now)d.setDate(d.getDate()+1); return {...m,d};
+ }).sort((a,b)=>a.d-b.d);
+ let n=candidates[0];
+ if(!n){reminderCountdown.textContent=tr('done');reminderNextName.textContent=tr('nextNone');return}
+ let mins=Math.max(0,Math.ceil((n.d-now)/60000)), hrs=Math.floor(mins/60), mm=mins%60;
+ reminderCountdown.textContent=hrs?`${hrs}h ${mm}m`:`${mm} min`;
+ reminderNextName.textContent=`${n.name} • ${fmt(n.time)}`;
+}
+
+let voiceEnabled=false;
+let availableVoices=[];
+function loadVoices(){
+  if(!('speechSynthesis' in window)) return;
+  availableVoices=speechSynthesis.getVoices()||[];
+}
+if('speechSynthesis' in window){
+  loadVoices();
+  speechSynthesis.addEventListener('voiceschanged',()=>{loadVoices(); updateVoiceStatus();});
+}
+const voiceLangs={
+  en:'en-IN',hi:'hi-IN',bn:'bn-IN',ta:'ta-IN',te:'te-IN',mr:'mr-IN',
+  gu:'gu-IN',kn:'kn-IN',ml:'ml-IN',pa:'pa-IN',ur:'ur-IN'
+};
+function getLocalVoice(){
+  const target=voiceLangs[currentLang]||'en-IN';
+  const prefix=target.split('-')[0].toLowerCase();
+  return availableVoices.find(v=>v.lang.toLowerCase()===target.toLowerCase())
+      || availableVoices.find(v=>v.lang.toLowerCase().startsWith(prefix+'-'))
+      || availableVoices.find(v=>v.lang.toLowerCase()===prefix);
+}
+function speak(text){
+  if(!('speechSynthesis' in window)){toast(tr('voiceUnsupported'));return}
+  loadVoices();
+  const voice=getLocalVoice();
+  if(!voice && currentLang!=='en'){
+    toast(tr('voiceUnavailable'));
+    return;
+  }
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=0.88; u.pitch=1;
+  u.lang=voice ? voice.lang : 'en-IN';
+  if(voice) u.voice=voice;
+  speechSynthesis.speak(u);
+}
+function enableVoice(){
+ voiceEnabled=true;
+ speak("Hello. PillPal AI voice reminders are now enabled.");
+ toast(tr('enableVoice'));
+}
+function testVoice(){
+ voiceEnabled=true;
+ let n=state.meds.filter(m=>!m.taken).sort((a,b)=>a.time.localeCompare(b.time))[0];
+ speak(n ? tr('reminderVoice').replace('{name}',n.name).replace('{dose}',n.dose) : tr('noUpcoming'));
+}
+function requestNotifications(){
+ if(!('Notification' in window)){toast(tr('notificationUnsupported'));return}
+ Notification.requestPermission().then(p=>toast(p==='granted'?tr('notificationOn'):tr('notificationDenied')));
+}
+function checkReminder(){
+ let now=new Date(), stamp=now.toISOString().slice(0,16);
+ state.meds.forEach(m=>{
+   if(m.taken)return;
+   let [h,mi]=m.time.split(':').map(Number);
+   if(now.getHours()===h && now.getMinutes()===mi){
+     let last=localStorage.getItem('pillpal_last_reminder');
+     if(last!==stamp){
+       localStorage.setItem('pillpal_last_reminder',stamp);
+       toast(`🔔 Reminder: ${m.name} — ${m.dose}`);
+       if(voiceEnabled) speak(`Medication reminder. It is time to take your ${m.name}. Your scheduled dose is ${m.dose}.`);
+       if('Notification' in window && Notification.permission==='granted') new Notification('PillPal AI Reminder',{body:`Time for ${m.name} — ${m.dose}`});
+     }
+   }
+ });
+ updateCountdown();
+}
+function render(){
+ let total=state.meds.length, done=state.meds.filter(x=>x.taken).length, pct=total?Math.round(done/total*100):0;
+ document.getElementById('doseCount').textContent=`${done}/${total}`;
+ document.getElementById('adherence').textContent=pct+'%';
+ document.getElementById('reportPercent').textContent=pct+'%';
+ document.getElementById('progress').style.width=pct+'%';
+ let upcoming=state.meds.filter(x=>!x.taken).sort((a,b)=>a.time.localeCompare(b.time))[0];
+ document.getElementById('nextDose').textContent=upcoming?fmt(upcoming.time):'Done!';
+ document.getElementById('nextName').textContent=upcoming?upcoming.name:'All demo doses completed';
+ document.getElementById('todayList').innerHTML=state.meds.map(card).join('');
+ document.getElementById('reminderList').innerHTML=state.meds.slice().sort((a,b)=>a.time.localeCompare(b.time)).map(m=>`
+  <div class="pill">
+   <div><b>${fmt(m.time)}</b> — ${m.name}<br><span class="muted">${m.dose}</span></div>
+   <div style="display:flex;gap:7px;align-items:center">
+    <span class="status ${m.taken?'taken':m.missed?'missed':'pending'}">${m.taken?tr('taken'):m.missed?tr('missed'):tr('upcoming')}</span>
+    <button class="${m.taken?'secondary':m.missed?'danger':'primary'}" onclick="toggle(${m.id})">${m.taken?'✓ '+tr('taken'):m.missed?tr('take'):tr('take')}</button>
+   </div>
+  </div>`).join('') || '<p class="muted">No reminders scheduled.</p>';
+ updateCountdown();
+ document.getElementById('medicineList').innerHTML=state.meds.map(m=>`
+  <div class="pill"><div><b>${m.name}</b><br><span class="muted">${m.dose} • ${fmt(m.time)}</span></div>
+  <button class="${m.taken?'secondary':'primary'}" onclick="toggle(${m.id})">${m.taken?'✓ Taken':'Mark taken'}</button></div>`).join('') || '<p class="muted">No medicines added.</p>';
+ document.getElementById('careList').innerHTML=state.meds.map(m=>`
+  <div class="pill"><div><b>${m.name}</b><br><span class="muted">${fmt(m.time)}</span></div>
+  <span class="status ${m.taken?'taken':'pending'}">${m.taken?'TAKEN':'PENDING'}</span></div>`).join('');
+}
+function card(m){return `<div class="pill"><div><b>${m.name}</b><br><span class="muted">${m.dose} • ${fmt(m.time)}</span></div><button class="${m.taken?'secondary':'primary'}" onclick="toggle(${m.id})">${m.taken?'✓ Taken':'Take dose'}</button></div>`}
+function toggle(id){let m=state.meds.find(x=>x.id===id);m.taken=!m.taken;if(m.taken)m.missed=false;toast(m.taken?tr('doseTaken'):tr('dosePending'));save()}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(b.dataset.view).classList.add('active')});
+document.getElementById('medForm').onsubmit=e=>{e.preventDefault();state.meds.push({id:Date.now(),name:medName.value,dose:medDose.value,time:medTime.value,taken:false});e.target.reset();toast(tr('medicineAdded'));save()};
+document.getElementById('photo').onchange=e=>{
+ const f=e.target.files[0]; if(!f)return;
+ preview.src=URL.createObjectURL(f);preview.style.display='block';
+ scanResult.innerHTML='<b>🔎 Analyzing image…</b><br><span class="muted">Demo recognition running</span>';
+ setTimeout(()=>scanResult.innerHTML='<div class="card" style="margin-top:12px;text-align:left"><b>Demo result: Medicine detected</b><br><span class="muted">Name and dosage should be verified before use.</span><br><button class="primary" style="margin-top:10px" onclick="document.querySelector(\'[data-view=meds]\').click()">Add to My Medicines</button></div>',900);
+};
+function shareReport(){navigator.clipboard?.writeText('PillPal AI demo report: '+document.getElementById('reportPercent').textContent+' of today’s demo doses marked taken.');toast(tr('reportCopied'))}
+function toast(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}
+document.getElementById('today').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+document.getElementById('language').value=currentLang;
+applyLanguage();
+render();
+updateVoiceStatus();
+markMissedDoses();
+setInterval(()=>{markMissedDoses();checkReminder();},15000);
+</script>
+<script>
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+ navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+</script></body>
+</html>
